@@ -1,0 +1,16 @@
+# Visual Studio Code
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# MacOSX
+.DS_Store
+
+# C# 
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+
+package-lock.json
+
+node_modules/
