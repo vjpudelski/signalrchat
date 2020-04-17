@@ -1,24 +1,119 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="./js/lib/signalr.min.js"></script>
+    <style>
+      :root {
+        box-sizing: border-box;
+      }
 
+      *,
+      *::before,
+      *::after {
+        box-sizing: inherit;
+      }
+
+      input[type=text] {
+        width: 100%;
+      }
+
+      #moveme {
+        position: absolute;
+        border:dashed 1px #CCC; 
+        width:120px;
+        height:200px;
+        padding:5px; 
+        margin:5px; 
+        font:13px Arial; 
+        cursor:move; 
+        float:left; 
+        resize: both;
+        overflow: auto;
+        display: flex;
+        flex-wrap: wrap;
+        flex-direction: column;
+      }
+
+      #text-entry {
+        width: 100%;
+        flex: 0;
+      }
+
+      #messages {
+        flex: 1;
+        width: 100%;
+        border: 1px solid #0000ff;
+        word-wrap: break-word;
+        overflow-y: scroll;
+      }
+    </style>
+    <script src="./js/lib/signalr.min.js"></script>
   </head>
   <body>
-    <div>
-      <input type="text" id="user">
-    </div>
-    <div>
-      <input type="text" id="msg">
-    </div>
-    <div>
-      <button id="btn-send">Send</button>
-    </div>
-    <hr>
-    <div>
-      <ul id="messages"></ul>
+    <div id="moveme" draggable="true">
+      <a href="#" id="lock">Lock</a>
+      <br />
+      <div id="messages"></div>
+      <div id="text-entry">
+        <hr>
+        <div>
+          <input type="text" id="user">
+        </div>
+        <div>
+          <input type="text" id="msg">
+        </div>
+        <div>
+          <button id="btn-send">Send</button>
+        </div>
+      </div>
     </div>
     <script>
+      document.querySelector('#lock').addEventListener('click', lock);
+      var moveme = document.getElementById('moveme');
+      moveme.addEventListener('mousedown', mouseDown);
+      var posX = 0, posY = 0;
+
+      function lock(e) {
+        console.log('in click');
+        let elem = e.currentTarget;
+        elem.classList.toggle('locked');
+
+        if (elem.classList.contains('locked')) {
+          moveme.removeEventListener('mousedown', mouseDown);
+          moveme.setAttribute('draggable', false);
+          elem.innerHTML = "Unlock"
+        }
+        else {
+          moveme.addEventListener('mousedown', mouseDown);
+          moveme.setAttribute('draggable', true);
+          elem.innerHTML = "Lock";
+        }
+      }
+
+      function mouseUp()
+      {
+        window.removeEventListener('mousemove', divMove);
+        window.removeEventListener('mouseup', mouseUp);
+      }
+
+      function mouseDown(e){
+        posX = e.clientX - moveme.offsetLeft;
+        posY = e.clientY - moveme.offsetTop;
+
+        console.log (posX + " " + posY);
+        window.addEventListener('mousemove', divMove);
+        window.addEventListener('mouseup', mouseUp);
+        e.preventDefault();
+      }
+
+      function divMove(e){
+        console.log (posX + " " + posY);
+        moveme.style.left = (e.clientX - posX) + 'px';
+        moveme.style.top = (e.clientY - posY) + 'px';
+        e.preventDefault();
+      }
+
+
+
       var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
 
       //Disable send button until connection is established
@@ -27,9 +122,11 @@
       connection.on("ReceiveMessage", function (user, message) {
           var msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
           var encodedMsg = user + " says " + msg;
-          var li = document.createElement("li");
-          li.textContent = encodedMsg;
-          document.getElementById("messages").appendChild(li);
+          var li = document.createElement("div");
+          li.innerHTML = encodedMsg;
+          let messages =  document.querySelector('#messages');
+          messages.appendChild(li);
+          messages.scrollTop = messages.scrollHeight;
       });
 
       connection.start().then(function () {
